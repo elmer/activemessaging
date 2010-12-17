@@ -1,5 +1,5 @@
 module ActiveMessaging
-  APP_ROOT = ENV['APP_ROOT'] || ENV['RAILS_ROOT'] || ((defined? RAILS_ROOT) && RAILS_ROOT) || File.dirname($0)
+  APP_ROOT = ENV['APP_ROOT'] || ENV['RAILS_ROOT'] || ((defined? Rails) && Rails.root) || File.dirname($0)
   APP_ENV  = ENV['APP_ENV']  || ENV['RAILS_ENV']  || 'development'
   ROOT     = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 
@@ -19,7 +19,7 @@ module ActiveMessaging
 
   def ActiveMessaging.logger
     @@logger = nil unless defined? @@logger
-    @@logger ||= RAILS_DEFAULT_LOGGER if defined? RAILS_DEFAULT_LOGGER
+    @@logger ||= Rails.logger if defined? Rails
     @@logger ||= ActiveRecord::Base.logger if defined? ActiveRecord
     @@logger ||= Logger.new(STDOUT)
     @@logger
@@ -60,12 +60,12 @@ module ActiveMessaging
 
   def self.load_processors(first=true)
     #Load the parent processor.rb, then all child processor classes
-    load APP_ROOT + '/vendor/plugins/activemessaging/lib/activemessaging/message_sender.rb' unless defined?(ActiveMessaging::MessageSender)
-    load APP_ROOT + '/vendor/plugins/activemessaging/lib/activemessaging/processor.rb' unless defined?(ActiveMessaging::Processor)
-    load APP_ROOT + '/vendor/plugins/activemessaging/lib/activemessaging/filter.rb' unless defined?(ActiveMessaging::Filter)
-    logger.debug "ActiveMessaging: Loading #{APP_ROOT + '/app/processors/application.rb'}" if first
-    load APP_ROOT + '/app/processors/application.rb' if File.exist?("#{APP_ROOT}/app/processors/application.rb")
-    Dir[APP_ROOT + '/app/processors/*.rb'].each do |f|
+    load "#{APP_ROOT}/lib/activemessaging/message_sender.rb" unless defined?(ActiveMessaging::MessageSender)
+    load "#{APP_ROOT}/lib/activemessaging/processor.rb" unless defined?(ActiveMessaging::Processor)
+    load "#{APP_ROOT}/lib/activemessaging/filter.rb" unless defined?(ActiveMessaging::Filter)
+    logger.debug "ActiveMessaging: Loading #{APP_ROOT}/app/processors/application.rb" if first
+    load "#{APP_ROOT}/app/processors/application.rb" if File.exist?("#{APP_ROOT}/app/processors/application.rb")
+    Dir["#{APP_ROOT}/app/processors/*.rb"].each do |f|
       unless f.match(/\/application.rb/)
         logger.debug "ActiveMessaging: Loading #{f}" if first
         load f
@@ -117,14 +117,14 @@ end
 ActiveMessaging.load_activemessaging
 
 # reload these on each Rails request - leveraging Dispatcher semantics for consistency
-if defined? Rails
-  ActiveMessaging.logger.info "Rails available: Adding dispatcher prepare callback."
-  require 'dispatcher' unless defined?(::Dispatcher)
-  
-  # add processors and config to on_prepare if supported (rails 1.2+)
-  if ::Dispatcher.respond_to? :to_prepare
-    ::Dispatcher.to_prepare :activemessaging do
-      ActiveMessaging.reload_activemessaging
-    end
-  end
-end
+# if defined? Rails
+#   ActiveMessaging.logger.info "Rails available: Adding dispatcher prepare callback."
+#   require 'dispatcher' unless defined?(::Dispatcher)
+#   
+#   # add processors and config to on_prepare if supported (rails 1.2+)
+#   if ::Dispatcher.respond_to? :to_prepare
+#     ::Dispatcher.to_prepare :activemessaging do
+#       ActiveMessaging.reload_activemessaging
+#     end
+#   end
+# end
